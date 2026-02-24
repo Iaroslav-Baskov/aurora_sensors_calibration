@@ -32,23 +32,10 @@ This project performs multi-stage sensor calibration to account for temperature 
 - Generates temperature-corrected calibration parameters
 - Combines data from both phases for comprehensive IMU offset correction
 
-## Project Structure
-
-- `README.md` - This file
-- Scripts and calibration utilities (C++/Python)
-
 ## Technology Stack
 
 - **Language**: C++
 - **Analysis**: Python scripts
-
-## Getting Started
-
-[Add instructions for setup, dependencies, and usage here]
-
-## License
-
-[Add license information]
 
 ## Contact
 
