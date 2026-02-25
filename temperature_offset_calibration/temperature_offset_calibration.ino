@@ -126,7 +126,7 @@ void startI2CDevices(){
 }
 void dataToCsv(SensorData data,char buffer[],int len){
   snprintf(buffer, len,
-    "2f,%.2f,%.2f,%.0f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f\n",
+    "%2f,%.2f,%.2f,%.0f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f\n",
     data.AHT_temp,data.AHT_hum,
     data.BMP_temp,data.BMP_pres,
     data.gyro.x,data.gyro.y,data.gyro.z,
