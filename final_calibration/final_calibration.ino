@@ -8,7 +8,7 @@
 #define RST       14
 #define DIO0      27
 
-#define SD_CS     5
+#define SD_CS     33
 #define SCK_PIN   18
 #define MISO_PIN  19
 #define MOSI_PIN  23
@@ -38,15 +38,9 @@ struct SensorData {
   float gtemp;
   float3d mag;
 };
-struct device{
-  bool OK;
-  unsigned long last;
-  unsigned long last_alive;
-  unsigned long timeout;
-};
 SensorData data;
 
-char row[2048];
+char row[512];
 
 void getMag(float3d &output) {
     int16_t3d result;
@@ -72,10 +66,8 @@ bool i2cDevicePresent(uint8_t address) {
 void sdConnect(){
   Serial.println("sd connect");
   if(SD.begin(SD_CS)){
-    File file = SD.open("/sensors-calibration.csv");
-    if (!file) {
-      file.close();
-      file = SD.open("/sensors-calibration.csv");
+    if (!SD.exists("/final-calibration.csv")) {
+      File file = SD.open("/final-calibration.csv",FILE_WRITE);
       if(file){
         for(int i=0;i<sizeof(labels)/sizeof(labels[0]);i++){
           file.print(labels[i]);
@@ -85,9 +77,18 @@ void sdConnect(){
         file.close();}
     }
   }
+  
+  Serial.println("sd connected");
 }
 void accelConnect(){
-  sensor.wakeup();
+  
+  Serial.println("accel connect");
+  while(!sensor.wakeup());
+    sensor.setAccelSensitivity(0);  //  2g
+    sensor.setGyroSensitivity(0);   //  250 degrees/s
+    sensor.setThrottle();
+  
+  
 }
 void magnConnect(){
   Serial.println("magn connect");
@@ -103,7 +104,10 @@ void magnConnect(){
 }
 void startI2CDevices(){
   delay(500);
-  Wire.begin();
+  Wire.begin(21,22);
+  Wire.setClock(100000); // Set to 100kHz (Standard Mode) for better stability
+  Wire.setTimeOut(50);   // Give it 50ms to recover before erroring out
+  delay(500);
   accelConnect();
   magnConnect();
 }
@@ -117,7 +121,7 @@ void dataToCsv(SensorData data,char buffer[],int len){
   );
 }
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN);
   pinMode(HOT_PIN, OUTPUT);
   pinMode(CS_PIN, OUTPUT);
@@ -126,10 +130,11 @@ void setup() {
   digitalWrite(SD_CS, HIGH);
   startI2CDevices();
   sdConnect();
+  delay(100);
 }
 
 void loop() {
-  if(sensor.read()){
+  sensor.read();
     data.accel.x = sensor.getAccelX();
     data.accel.y = sensor.getAccelY();
     data.accel.z = sensor.getAccelZ();
@@ -138,14 +143,18 @@ void loop() {
     data.gyro.y = sensor.getGyroY();
     data.gyro.z = sensor.getGyroZ();
 
-    data.gtemp = sensor.getTemperature();}
+    data.gtemp = sensor.getTemperature();///340.0+36.53;
+  
   
   getMag(data.mag);
+  digitalWrite(HOT_PIN,LOW);
+//  digitalWrite(HOT_PIN,millis()%1200000<600000);
   dataToCsv(data,row,sizeof(row));
   Serial.print(row);
-  File file = SD.open("/sensors-calibration.csv", FILE_APPEND);
-  if (file) {
-    file.print(row);
-    file.close();
-  }
+    File file = SD.open("/final-calibration.csv", FILE_APPEND);
+    if (file) {
+      file.print(row);
+      file.close();
+    }
+    delay(100);
 }
